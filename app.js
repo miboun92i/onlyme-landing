@@ -4,11 +4,11 @@
 
   function inLiveWindow(startAt, endAt) {
     if (!startAt || !endAt) return false;
-    const now = new Date();
-    const [sh, sm] = startAt.split(":").map(Number);
-    const [eh, em] = endAt.split(":").map(Number);
+    const [sh, sm] = String(startAt).split(":").map(Number);
+    const [eh, em] = String(endAt).split(":").map(Number);
     const start = sh * 60 + sm;
     const end = eh * 60 + em;
+    const now = new Date();
     const cur = now.getHours() * 60 + now.getMinutes();
     if (start === end) return true;
     if (start < end) return cur >= start && cur < end;
@@ -22,38 +22,42 @@
 
   app.innerHTML = `
     <div class="banner" style="background-image:url('${p.banner || ""}')"></div>
-    <div class="profile-row">
-      <div class="avatar-wrap">
-        <img class="avatar ${liveOn ? "live-on" : "}" src="${avatarSrc || ""}" alt="" />
-        ${liveOn ? `<div class="live-badge">LIVE${p.live?.viewers ? " · " + p.live.viewers : ""}</div>` : ""}
-      </div>
-      <div class="meta">
-        <div class="name">${p.displayName || p.username || ""} ${p.verified ? '<span class="tick">✓</span>' : ""}</div>
+    <div class="identity">
+      <div class="avatar-ring ${liveOn ? "live" : ""}"><img src="${avatarSrc || ""}" alt=""></div>
+      <div class="name-block">
+        <div class="name">${p.displayName || p.username || ""} ${p.verified ? '<span class="badge">✓</span>' : ""}</div>
         <div class="handle">@${p.username || ""}</div>
       </div>
     </div>
-    <p class="bio">${p.bio || ""}</p>
     <div class="stats">
-      <div><strong>${p.nbPosts ?? 0}</strong><span>Posts</span></div>
-      <div><strong>${p.nbVideos ?? 0}</strong><span>Vidéos</span></div>
-      <div><strong>${p.nbLikes ?? 0}</strong><span>Likes</span></div>
+      <span><span class="i">🖼</span> <b>${p.nbPosts ?? 0}</b> Photos</span>
+      <span><span class="i">🎬</span> <b>${p.nbVideos ?? 0}</b> Vidéos</span>
+      <span><span class="i">💜</span> <b>${p.nbLikes ?? 0}</b> Likes</span>
     </div>
-    <a class="cta" href="${p.ctaUrl || "#"}">${p.ctaLabel || "Continuer"}</a>
-    ${stories.length ? `<div class="section-title">Stories</div>
-      <div class="stories">${stories.map((s) => `
-        <div class="story">
-          <img class="${s.blurred ? "blur" : ""}" src="${s.image}" alt="${s.name || ""}" />
-          <div>${s.name || ""}</div>
-        </div>`).join("")}</div>` : ""}
-    <div class="section-title">Médias</div>
-    <div class="grid">
-      ${posts.map((post) => `
-        <div class="cell ${post.blurred ? "blur" : ""}">
-          <img src="${post.image}" alt="" />
-          ${post.blurred ? '<div class="lock">🔒</div>' : ""}
-          ${post.video ? '<div class="vid">▶</div>' : ""}
-        </div>`).join("")}
+    <div class="bio">${p.bio || ""}</div>
+    <div class="divider"></div>
+    <div class="stories">${stories.map((s) => `
+      <div class="story">
+        <div class="story-ring ${s.blurred ? "blur" : ""}">
+          <img src="${s.image}" alt="">
+          ${s.blurred ? '<div class="eye">👁</div>' : ""}
+        </div>
+        ${s.name || ""}
+      </div>`).join("")}</div>
+    <div class="tabs">
+      <button class="tab active" data-tab="posts">🔥 Posts</button>
+      <button class="tab" data-tab="profils">👤 Profils</button>
+      <button class="tab" data-tab="live">📡 Live</button>
     </div>
+    <div id="posts" class="panel show">
+      <div class="grid">${posts.map((post) => `
+        <a class="card ${post.blurred ? "blur" : ""}" href="${p.ctaUrl || "#"}">
+          <img src="${post.image}" alt="">
+          <div class="play">▶</div>
+        </a>`).join("")}</div>
+    </div>
+    <div id="profils" class="panel">Aucun autre profil.</div>
+    <div id="live" class="panel">${liveOn ? `Live en cours · ${p.live?.viewers || 0} personnes` : "Live inactif pour le moment."}</div>
     <div class="popup ${p.hideOfferPopup ? "hidden" : ""}" id="offer">
       <div class="sheet">
         <h2>Accès privé</h2>
@@ -63,6 +67,14 @@
     </div>
   `;
 
+  app.querySelectorAll(".tab").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      app.querySelectorAll(".tab").forEach((b) => b.classList.remove("active"));
+      app.querySelectorAll(".panel").forEach((pane) => pane.classList.remove("show"));
+      btn.classList.add("active");
+      document.getElementById(btn.dataset.tab)?.classList.add("show");
+    });
+  });
   document.getElementById("offer-go")?.addEventListener("click", () => {
     if (p.ctaUrl) window.location.href = p.ctaUrl;
   });
